@@ -5,4 +5,3 @@ For use with the 3D model formats from Tales of Destiny 2 and Tales of Rebirth.
 Usage:
 
 py mdltoply.py input output
-py mdltoply.py input output
