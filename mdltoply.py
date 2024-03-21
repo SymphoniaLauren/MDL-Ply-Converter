@@ -61,9 +61,42 @@ def convMDL():
         vertcount = trivertcount + quadvertcount
         facecount = trifacecount + quadfacecount
         vertdatasize = vertcount * 24
-
+        
+        vertex_x = []
+        vertex_y = []
+        vertex_z = []
+        vertex_s = []
+        vertex_t = []
+        vertex_r = []
+        vertex_b = []
+        vertex_g = []
+        vertex_a = []
+        
         # grab the blobby because I am lazy (^^;)v
-        vertdata = f.read(vertdatasize)
+        #vertdata = f.read(vertdatasize)
+        for i in range(vertcount):
+            f.seek(0xc + (0x18 * i))
+            vert_x = struct.unpack("f", f.read(4))[0]
+            vert_y = struct.unpack("f", f.read(4))[0]
+            vert_y = (1 - vert_y)
+            vert_z = struct.unpack("f", f.read(4))[0]
+            vert_s = struct.unpack("f", f.read(4))[0]
+            vert_t = struct.unpack("f", f.read(4))[0]
+            vert_t = (1 - vert_t)
+            vert_r = struct.unpack("B", f.read(1))[0]
+            vert_g = struct.unpack("B", f.read(1))[0]
+            vert_b = struct.unpack("B", f.read(1))[0]
+            vert_a = struct.unpack("B", f.read(1))[0]
+            
+            vertex_x.append(vert_x)
+            vertex_y.append(vert_y)
+            vertex_z.append(vert_z)
+            vertex_s.append(vert_s)
+            vertex_t.append(vert_t)
+            vertex_r.append(vert_r)
+            vertex_g.append(vert_g)
+            vertex_b.append(vert_b)
+            vertex_a.append(vert_a)
 
     print(f"Tri vertices: {trivertcount}")
     print(f"Quad vertices: {quadvertcount}")
@@ -113,7 +146,16 @@ def convMDL():
     with open(output, "wb+") as f:
         f.write(headerstring)
 
-        f.write(vertdata)
+        for i in range(vertcount):
+            f.write(struct.pack("f", vertex_x[i]))
+            f.write(struct.pack("f", vertex_y[i]))
+            f.write(struct.pack("f", vertex_z[i]))
+            f.write(struct.pack("f", vertex_s[i]))
+            f.write(struct.pack("f", vertex_t[i]))
+            f.write(struct.pack("B", vertex_r[i]))
+            f.write(struct.pack("B", vertex_g[i]))
+            f.write(struct.pack("B", vertex_b[i]))
+            f.write(struct.pack("B", vertex_a[i]))
         for i in trianglefacedata:
             f.write(i)
         for i in quadfacedata:
@@ -163,8 +205,10 @@ def convfieldMDL():
 
         for i in range(0, vertcount):
 
-            u = struct.unpack("<I", f.read(4))[0]
-            v = struct.unpack("<I", f.read(4))[0]
+            u = struct.unpack("f", f.read(4))[0]
+            v = struct.unpack("f", f.read(4))[0]
+            v = (1 - v)
+            print(v)
             vertcolors = struct.unpack("<I", f.read(4))[0]
             s.append(u)
             t.append(v)
@@ -172,6 +216,8 @@ def convfieldMDL():
 
         # now we get the list of vertices for the models
         # Jesus take the wheel...
+        
+        print(len(t))
 
         modelsx = []
         modelsy = []
@@ -183,12 +229,15 @@ def convfieldMDL():
             y = []
             z = []
             for __ in range(vertcount):
-                xshort = struct.unpack("<H", f.read(2))[0]
-                yshort = struct.unpack("<H", f.read(2))[0]
-                zshort = struct.unpack("<H", f.read(2))[0]
-                x.append(xshort)
-                y.append(yshort)
-                z.append(zshort)
+                xshort = struct.unpack("<h", f.read(2))[0]
+                xfloat = float(xshort) * .01
+                yshort = struct.unpack("<h", f.read(2))[0]
+                yfloat = float(yshort) * .01 * -1
+                zshort = struct.unpack("<h", f.read(2))[0]
+                zfloat = float(zshort) * .01
+                x.append(xfloat)
+                y.append(yfloat)
+                z.append(zfloat)
             modelsx.append(x)
             modelsy.append(y)
             modelsz.append(z)
@@ -214,9 +263,9 @@ def convfieldMDL():
         b"format binary_little_endian 1.0\n"
         b"comment mdl to ply script by SymphoniaLauren\n"
         b"element vertex %b\n"
-        b"property short x\n"
-        b"property short y\n"
-        b"property short z\n"
+        b"property float x\n"
+        b"property float y\n"
+        b"property float z\n"
         b"property float s\n"
         b"property float t\n"
         b"property uchar red\n"
@@ -239,11 +288,11 @@ def convfieldMDL():
 
             # Here we write the vertex data
             for j in range(0, vertcount):
-                f.write(struct.pack("<H", modelsx[i][j]))
-                f.write(struct.pack("<H", modelsy[i][j]))
-                f.write(struct.pack("<H", modelsz[i][j]))
-                f.write(struct.pack("<I", s[j]))
-                f.write(struct.pack("<I", t[j]))
+                f.write(struct.pack("f", modelsx[i][j]))
+                f.write(struct.pack("f", modelsy[i][j]))
+                f.write(struct.pack("f", modelsz[i][j]))
+                f.write(struct.pack("f", s[j]))
+                f.write(struct.pack("f", t[j]))
                 f.write(struct.pack("<I", rgba[j]))
 
             for tri in trianglefacedata:
